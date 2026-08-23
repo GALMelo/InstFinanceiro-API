@@ -1,16 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CryptoModule } from '../../shared/crypto/crypto.module';
 import { OPEN_FINANCE_PROVIDER } from './domain/ports/open-finance-provider.port';
 import { MockOpenFinanceAdapter } from './infrastructure/adapters/mock/mock-open-finance.adapter';
 import { PluggyAdapter } from './infrastructure/adapters/pluggy/pluggy.adapter';
+import { ConnectAccountUseCase } from './application/use-cases/connect-account.use-case';
 import { SyncAccountsUseCase } from './application/use-cases/sync-accounts.use-case';
+import { SyncInvestmentsUseCase } from './application/use-cases/sync-investments.use-case';
 import { SyncTransactionsUseCase } from './application/use-cases/sync-transactions.use-case';
 import { OpenFinanceController } from './interface/open-finance.controller';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, CryptoModule],
   controllers: [OpenFinanceController],
-  providers: [
+  providers: [ConnectAccountUseCase, SyncInvestmentsUseCase,
     MockOpenFinanceAdapter,
     PluggyAdapter,
     {
