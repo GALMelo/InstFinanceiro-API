@@ -8,31 +8,55 @@ só trocar qual adapter é injetado — nada no domínio muda.
 
 ## Como rodar
 
-1. Instale as dependências:
-   ```bash
-   npm install
-   ```
+### Pré-requisitos
 
-2. Copie o `.env.example` para `.env` e ajuste `DATABASE_URL` para apontar
-   pro seu PostgreSQL (local, Docker, Supabase, Neon, etc.):
-   ```bash
-   cp .env.example .env
-   ```
+- Node.js 20+
+- Podman **ou** Docker
 
-3. Gere o Prisma Client e rode a primeira migration:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   ```
+### 1. Instale as dependências
 
-4. Suba a API:
-   ```bash
-   npm run start:dev
-   ```
+```bash
+npm install
+```
+
+### 2. Configure o ambiente
+
+```bash
+cp .env.example .env
+```
+
+Ajuste `DATABASE_URL` se necessário (o padrão já funciona com o banco local descrito abaixo).
+
+### 3. Suba o banco de dados
+
+```bash
+npm run db:up
+```
+
+Isso sobe um container PostgreSQL com Podman (ou Docker) na porta `5432`. Na primeira vez, o container é criado; nas seguintes, apenas reiniciado.
+
+Para parar o banco:
+```bash
+npm run db:down
+```
+
+### 4. Rode as migrations (apenas na primeira vez)
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 5. Suba a API
+
+```bash
+npm run start:dev
+```
 
 A API sobe em `http://localhost:3000` usando o `MockOpenFinanceAdapter` por
 padrão (`OPEN_FINANCE_PROVIDER=mock` no `.env`), então você já consegue
-testar os endpoints abaixo sem nenhuma credencial de banco real.
+testar os endpoints sem nenhuma credencial de banco real.
+
+A documentação Swagger fica disponível em `http://localhost:3000/docs`.
 
 ## Endpoints disponíveis
 

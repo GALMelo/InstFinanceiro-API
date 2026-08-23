@@ -30,6 +30,13 @@ enum InvestmentType {
   OUTROS
 }
 
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
 model Account {
   id            String   @id @default(uuid())
   userId        String

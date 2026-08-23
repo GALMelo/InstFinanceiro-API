@@ -5,9 +5,11 @@ import { MockOpenFinanceAdapter } from './infrastructure/adapters/mock/mock-open
 import { PluggyAdapter } from './infrastructure/adapters/pluggy/pluggy.adapter';
 import { SyncAccountsUseCase } from './application/use-cases/sync-accounts.use-case';
 import { SyncTransactionsUseCase } from './application/use-cases/sync-transactions.use-case';
+import { OpenFinanceController } from './interface/open-finance.controller';
 
 @Module({
   imports: [ConfigModule],
+  controllers: [OpenFinanceController],
   providers: [
     MockOpenFinanceAdapter,
     PluggyAdapter,

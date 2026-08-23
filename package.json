@@ -15,26 +15,53 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "db:up": "podman run -d --name finance-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=finance -p 5432:5432 postgres:16-alpine || podman start finance-postgres",
+    "db:down": "podman stop finance-postgres"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
     "@nestjs/config": "^3.2.3",
     "@nestjs/core": "^10.4.0",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/swagger": "^11.4.7",
     "@prisma/client": "^5.19.1",
+    "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.5",
     "@nestjs/schematics": "^10.1.4",
     "@nestjs/testing": "^10.4.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.9",
+    "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
