@@ -64,4 +64,5 @@ npm run test:e2e      # e2e com banco real (requer db:up)
 | [`doc/PROJECT_OVERVIEW.md`](doc/PROJECT_OVERVIEW.md) | Visão geral, arquitetura, fluxos, decisões técnicas, status |
 | [`doc/TESTING.md`](doc/TESTING.md) | Guia completo de testes unitários e e2e |
 | [`doc/PLUGGY.md`](doc/PLUGGY.md) | Integração com a Pluggy: setup, credenciais sandbox, mapeamentos |
+| [`doc/NEXT_STEPS.md`](doc/NEXT_STEPS.md) | Próximos passos priorizados (débitos, melhorias, features) |
 | `http://localhost:3000/docs` | Swagger UI interativo (com instrução de uso embutida) |
