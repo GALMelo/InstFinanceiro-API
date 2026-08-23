@@ -45,15 +45,36 @@ silenciosa — qualquer token roubado é válido por 7 dias.
 
 ---
 
-### 4. Tratamento de status PENDING na Pluggy
+### 4. ~~Tratamento de status PENDING na Pluggy~~ ✅ Implementado
 
-**Problema:** `connectAccount` pode retornar `status: 'PENDING'` quando a instituição
-exige MFA ou está processando. Hoje o sistema não tem como notificar quando vira `CONNECTED`.
+`GET /connections/:id/status` (polling), `POST /connections/webhook` (callback Pluggy),
+`HandleWebhookUseCase` (sync automático ao receber CONNECTED). Ver `doc/CONECTAR_BANCO.md`.
+
+---
+
+### 4b. Configuração de WEBHOOK_BASE_URL em produção
+
+**Problema:** o webhook da Pluggy exige uma URL pública permanente. Em desenvolvimento
+ngrok resolve; em produção precisa de uma URL estável.
 
 **O que fazer:**
-- Criar endpoint `GET /connections/:id` que relê o status do item na Pluggy
-- Criar `POST /connections/:id/webhook` para receber callbacks da Pluggy quando o status muda
-- Atualizar a tabela `Connection` ao receber o webhook e disparar a sincronização automaticamente
+- Preencher `WEBHOOK_BASE_URL` no ambiente de produção com o domínio da API
+- Documentar no `.env.example` (a ser criado)
+- Verificar se o endpoint `/connections/webhook` está acessível sem autenticação de rede (sem VPN/firewall bloqueando)
+- Registrar o webhook também no dashboard da Pluggy como fallback caso a URL mude
+
+---
+
+### 4c. Re-autenticação quando conexão expira (`OUTDATED`)
+
+**Problema:** conexões bancárias expiram (sessão no banco vence). Hoje o usuário
+precisa saber que precisa reconectar, e o sistema não o avisa.
+
+**O que fazer:**
+- Webhook da Pluggy envia `item/error` ou `item/updated` com `status: OUTDATED`
+- `HandleWebhookUseCase` já captura o status — adicionar lógica para notificar (e-mail, push)
+- Criar `PUT /connections/:id/reconnect` que aceita novas credenciais e reativa o item na Pluggy
+- Alternativa simples: deixar o usuário deletar e reconectar via `POST /connections`
 
 ---
 
@@ -135,10 +156,20 @@ porque a Pluggy não retorna `accountId` por investimento.
 
 ## 🟢 Evolução de produto
 
-### 11. `GET /connections` — listar conexões do usuário
+### 11. ~~`GET /connections` — listar conexões do usuário~~ ✅ Implementado
 
-Retornar as conexões ativas do usuário com `connectionId`, `status`, e `institution`.
-Útil para o front saber quais bancos estão conectados e se precisam de re-autenticação.
+`GET /connections` retorna todas as conexões do usuário com `connectionId`, `status`, `createdAt`, `updatedAt`.
+
+---
+
+### 11b. `GET /connections` — incluir nome da instituição
+
+**Problema:** a listagem retorna o `connectionId` mas não o nome do banco, forçando
+o front a cruzar com `GET /connectors`.
+
+**O que fazer:**
+- Salvar `connectorName` na tabela `Connection` (nova migration) ao conectar
+- Retornar no `GET /connections` para evitar chamadas extras
 
 ---
 
@@ -196,19 +227,30 @@ Requer um `UserPreferences` ou `Alert` model no banco.
 ## Resumo por ordem de execução sugerida
 
 ```
-1  → Global Exception Filter          (1-2h, isolado)
-2  → Corrigir cast de enums           (1h, isolado)
-3  → Paginação                        (meio dia)
-4  → Rate limiting                    (2h)
-5  → Refresh token                    (meio dia)
-6  → GET /connections                 (1h)
-7  → DELETE /connections/:id          (2h + LGPD)
-8  → Status PENDING / webhook Pluggy  (1 dia)
-9  → Sync agendado                    (2h, depende de #8)
-10 → Observabilidade                  (1 dia)
-11 → Docker Compose                   (2h)
-12 → CI/CD                            (meio dia)
-13 → Dashboard /summary               (2h)
-14 → Mapeamento fino de investimentos (2h)
-15 → Alertas de gastos                (1-2 dias)
+✅  Status PENDING / webhook Pluggy   (feito)
+✅  GET /connectors                   (feito)
+✅  GET /connections                  (feito)
+✅  GET /connections/:id/status       (feito)
+
+— Para fechar o fluxo de conexão —
+1  → WEBHOOK_BASE_URL em produção     (1h — infra/deploy)
+2  → Re-autenticação OUTDATED         (meio dia)
+3  → DELETE /connections/:id          (2h + LGPD)
+4  → connectorName na Connection      (1h + migration)
+
+— Qualidade e operação —
+5  → Global Exception Filter          (1-2h, isolado)
+6  → Corrigir cast de enums           (1h, isolado)
+7  → Paginação                        (meio dia)
+8  → Rate limiting                    (2h)
+9  → Refresh token                    (meio dia)
+10 → Sync agendado                    (2h)
+11 → Observabilidade                  (1 dia)
+12 → Docker Compose                   (2h)
+13 → CI/CD                            (meio dia)
+
+— Produto —
+14 → Dashboard /summary               (2h)
+15 → Mapeamento fino de investimentos (2h)
+16 → Alertas de gastos                (1-2 dias)
 ```
