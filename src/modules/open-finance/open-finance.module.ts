@@ -5,22 +5,31 @@ import { OPEN_FINANCE_PROVIDER } from './domain/ports/open-finance-provider.port
 import { MockOpenFinanceAdapter } from './infrastructure/adapters/mock/mock-open-finance.adapter';
 import { PluggyAdapter } from './infrastructure/adapters/pluggy/pluggy.adapter';
 import { ConnectAccountUseCase } from './application/use-cases/connect-account.use-case';
+import { GetConnectionStatusUseCase } from './application/use-cases/get-connection-status.use-case';
+import { HandleWebhookUseCase } from './application/use-cases/handle-webhook.use-case';
+import { ListConnectionsUseCase } from './application/use-cases/list-connections.use-case';
 import { SyncAccountsUseCase } from './application/use-cases/sync-accounts.use-case';
 import { SyncInvestmentsUseCase } from './application/use-cases/sync-investments.use-case';
 import { SyncTransactionsUseCase } from './application/use-cases/sync-transactions.use-case';
 import { OpenFinanceController } from './interface/open-finance.controller';
+import { OpenFinanceWebhookController } from './interface/open-finance-webhook.controller';
 
 @Module({
   imports: [ConfigModule, CryptoModule],
-  controllers: [OpenFinanceController],
-  providers: [ConnectAccountUseCase, SyncInvestmentsUseCase,
+  controllers: [OpenFinanceController, OpenFinanceWebhookController],
+  providers: [
+    ConnectAccountUseCase,
+    ListConnectionsUseCase,
+    GetConnectionStatusUseCase,
+    HandleWebhookUseCase,
+    SyncAccountsUseCase,
+    SyncInvestmentsUseCase,
+    SyncTransactionsUseCase,
     MockOpenFinanceAdapter,
     PluggyAdapter,
     {
-      // Aqui e onde a Inversao de Dependencia vira decisao de runtime:
-      // o token OPEN_FINANCE_PROVIDER e resolvido para uma classe concreta
-      // com base numa variavel de ambiente. Nenhum outro arquivo do projeto
-      // sabe (ou deveria saber) que essa escolha existe.
+      // DI runtime: OPEN_FINANCE_PROVIDER resolvido pela variavel de ambiente.
+      // Nenhum outro arquivo do projeto conhece essa decisao.
       provide: OPEN_FINANCE_PROVIDER,
       useFactory: (config: ConfigService, mock: MockOpenFinanceAdapter, pluggy: PluggyAdapter) => {
         const provider = config.get<string>('OPEN_FINANCE_PROVIDER', 'mock');
@@ -28,8 +37,6 @@ import { OpenFinanceController } from './interface/open-finance.controller';
       },
       inject: [ConfigService, MockOpenFinanceAdapter, PluggyAdapter],
     },
-    SyncAccountsUseCase,
-    SyncTransactionsUseCase,
   ],
   exports: [OPEN_FINANCE_PROVIDER, SyncAccountsUseCase, SyncTransactionsUseCase],
 })

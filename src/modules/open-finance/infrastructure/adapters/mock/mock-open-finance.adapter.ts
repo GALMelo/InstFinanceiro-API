@@ -4,6 +4,7 @@ import {
   OpenFinanceProvider,
 } from '../../../domain/ports/open-finance-provider.port';
 import { AccountEntity } from '../../../domain/entities/account.entity';
+import { ConnectorEntity } from '../../../domain/entities/connector.entity';
 import {
   ExpenseCategory,
   TransactionDirection,
@@ -21,6 +22,14 @@ import { InvestmentEntity, InvestmentType } from '../../../domain/entities/inves
 export class MockOpenFinanceAdapter implements OpenFinanceProvider {
   async connectAccount(userId: string): Promise<ConnectionResult> {
     return { connectionId: `mock-conn-${userId}`, status: 'CONNECTED' };
+  }
+
+  async getConnectionStatus(connectionId: string): Promise<ConnectionResult> {
+    return { connectionId, status: 'CONNECTED' };
+  }
+
+  async listConnectors(): Promise<ConnectorEntity[]> {
+    return [new ConnectorEntity(0, 'Banco Fake S.A.', 'PERSONAL_BANK', 'BR')];
   }
 
   async fetchAccounts(connectionId: string): Promise<AccountEntity[]> {

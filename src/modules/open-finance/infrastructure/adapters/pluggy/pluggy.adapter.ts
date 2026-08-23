@@ -5,6 +5,7 @@ import {
   OpenFinanceProvider,
 } from '../../../domain/ports/open-finance-provider.port';
 import { AccountEntity } from '../../../domain/entities/account.entity';
+import { ConnectorEntity } from '../../../domain/entities/connector.entity';
 import {
   ExpenseCategory,
   TransactionDirection,
@@ -24,7 +25,14 @@ interface PluggyApiKey {
 interface PluggyItem {
   id: string;
   status: 'CONNECTED' | 'PENDING' | 'FAILED' | 'OUTDATED' | 'UPDATING' | string;
-  connector: { name: string };
+  connector: { id: number; name: string };
+}
+
+interface PluggyConnector {
+  id: number;
+  name: string;
+  type: string;
+  country: string;
 }
 
 interface PluggyAccount {
@@ -106,11 +114,13 @@ export class PluggyAdapter implements OpenFinanceProvider {
   private readonly logger = new Logger(PluggyAdapter.name);
   private readonly clientId: string;
   private readonly clientSecret: string;
+  private readonly webhookBase: string | undefined;
   private cachedKey: PluggyApiKey | null = null;
 
   constructor(config: ConfigService) {
     this.clientId = config.getOrThrow<string>('PLUGGY_CLIENT_ID');
     this.clientSecret = config.getOrThrow<string>('PLUGGY_CLIENT_SECRET');
+    this.webhookBase = config.get<string>('WEBHOOK_BASE_URL') || undefined;
   }
 
   // --- helpers HTTP --------------------------------------------------------
@@ -168,10 +178,25 @@ export class PluggyAdapter implements OpenFinanceProvider {
       parameters: Record<string, string>;
     };
 
-    const item = await this.post<PluggyItem>('/items', { connectorId, parameters });
+    const body: Record<string, unknown> = { connectorId, parameters };
+    if (this.webhookBase) {
+      body.webhookUrl = `${this.webhookBase}/connections/webhook`;
+    }
 
+    const item = await this.post<PluggyItem>('/items', body);
     this.logger.log(`Item Pluggy criado: ${item.id} status=${item.status}`);
     return { connectionId: item.id, status: toConnectionStatus(item.status) };
+  }
+
+  async getConnectionStatus(connectionId: string): Promise<ConnectionResult> {
+    const item = await this.get<PluggyItem>(`/items/${connectionId}`);
+    return { connectionId: item.id, status: toConnectionStatus(item.status) };
+  }
+
+  async listConnectors(search?: string): Promise<ConnectorEntity[]> {
+    const params = search ? `?name=${encodeURIComponent(search)}` : '';
+    const data = await this.get<PagedResponse<PluggyConnector>>(`/connectors${params}`);
+    return data.results.map((c) => new ConnectorEntity(c.id, c.name, c.type, c.country));
   }
 
   async fetchAccounts(connectionId: string): Promise<AccountEntity[]> {

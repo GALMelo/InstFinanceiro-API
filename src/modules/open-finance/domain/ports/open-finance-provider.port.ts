@@ -1,6 +1,7 @@
 import { AccountEntity } from '../entities/account.entity';
-import { TransactionEntity } from '../entities/transaction.entity';
+import { ConnectorEntity } from '../entities/connector.entity';
 import { InvestmentEntity } from '../entities/investment.entity';
+import { TransactionEntity } from '../entities/transaction.entity';
 
 export interface ConnectionResult {
   connectionId: string;
@@ -15,6 +16,8 @@ export interface ConnectionResult {
  */
 export interface OpenFinanceProvider {
   connectAccount(userId: string, credentials: unknown): Promise<ConnectionResult>;
+  getConnectionStatus(connectionId: string): Promise<ConnectionResult>;
+  listConnectors(search?: string): Promise<ConnectorEntity[]>;
   fetchAccounts(connectionId: string): Promise<AccountEntity[]>;
   fetchTransactions(connectionId: string, since: Date): Promise<TransactionEntity[]>;
   fetchInvestments(connectionId: string): Promise<InvestmentEntity[]>;
