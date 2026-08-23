@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionDirection {
+  INCOME
+  EXPENSE
+}
+
+enum ExpenseCategory {
+  ALIMENTACAO
+  TRANSPORTE
+  LAZER
+  MORADIA
+  SAUDE
+  OUTROS
+}
+
+enum InvestmentType {
+  POUPANCA
+  CDB
+  ACOES
+  FII
+  TESOURO_DIRETO
+  OUTROS
+}
+
+model Account {
+  id            String   @id @default(uuid())
+  userId        String
+  connectionId  String
+  institution   String
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions  Transaction[]
+  investments   Investment[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id          String                @id @default(uuid())
+  accountId   String
+  amount      Decimal               @db.Decimal(12, 2)
+  direction   TransactionDirection
+  // fonte do ganho (ex: "Empresa X - Salario") ou descricao do gasto
+  sourceLabel String
+  category    ExpenseCategory?
+  date        DateTime
+  createdAt   DateTime              @default(now())
+
+  account     Account               @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, date])
+  @@index([direction])
+}
+
+model Investment {
+  id           String         @id @default(uuid())
+  accountId    String
+  type         InvestmentType
+  institution  String
+  currentValue Decimal        @db.Decimal(14, 2)
+  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime       @default(now())
+
+  account      Account        @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([type])
+}
