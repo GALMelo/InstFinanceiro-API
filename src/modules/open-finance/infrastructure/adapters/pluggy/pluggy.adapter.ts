@@ -46,7 +46,7 @@ interface PluggyTransaction {
   accountId: string;
   date: string;           // ISO 8601
   description: string;
-  amount: number;         // valor absoluto
+  amount: number;         // signed: negativo para DEBIT
   type: 'CREDIT' | 'DEBIT';
   category?: string;
 }
@@ -97,7 +97,7 @@ function toInvestmentType(pluggyType: string): InvestmentType {
 }
 
 function toConnectionStatus(pluggyStatus: string): ConnectionResult['status'] {
-  if (pluggyStatus === 'CONNECTED') return 'CONNECTED';
+  if (pluggyStatus === 'CONNECTED' || pluggyStatus === 'UPDATED') return 'CONNECTED';
   if (pluggyStatus === 'FAILED')    return 'FAILED';
   return 'PENDING';
 }
@@ -214,35 +214,42 @@ export class PluggyAdapter implements OpenFinanceProvider {
 
   async fetchTransactions(connectionId: string, since: Date): Promise<TransactionEntity[]> {
     const all: TransactionEntity[] = [];
-    const from = since.toISOString().split('T')[0]; // YYYY-MM-DD
-    let cursor: string | undefined;
+    const dateFrom = since.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    do {
-      const params = new URLSearchParams({ itemId: connectionId, pageSize: '500', from });
-      if (cursor) params.set('cursor', cursor);
+    const accountsData = await this.get<PagedResponse<PluggyAccount>>(
+      `/accounts?itemId=${connectionId}`,
+    );
 
-      const data = await this.get<PagedResponse<PluggyTransaction>>(
-        `/transactions?${params.toString()}`,
-      );
+    for (const account of accountsData.results) {
+      let nextCursor: string | undefined;
 
-      for (const tx of data.results) {
-        all.push(
-          new TransactionEntity(
-            tx.id,
-            tx.accountId,
-            Math.abs(tx.amount),
-            toDirection(tx.type),
-            tx.description,
-            new Date(tx.date),
-            toCategory(tx.category),
-          ),
+      do {
+        const params = new URLSearchParams({ accountId: account.id, dateFrom });
+        if (nextCursor) params.set('cursor', nextCursor);
+
+        const data = await this.get<PagedResponse<PluggyTransaction>>(
+          `/v2/transactions?${params.toString()}`,
         );
-      }
 
-      cursor = data.next;
-    } while (cursor);
+        for (const tx of data.results) {
+          all.push(
+            new TransactionEntity(
+              tx.id,
+              tx.accountId,
+              Math.abs(tx.amount),
+              toDirection(tx.type),
+              tx.description,
+              new Date(tx.date),
+              toCategory(tx.category),
+            ),
+          );
+        }
 
-    this.logger.log(`fetchTransactions: ${all.length} transações desde ${from}`);
+        nextCursor = data.next;
+      } while (nextCursor);
+    }
+
+    this.logger.log(`fetchTransactions: ${all.length} transações desde ${dateFrom}`);
     return all;
   }
 
