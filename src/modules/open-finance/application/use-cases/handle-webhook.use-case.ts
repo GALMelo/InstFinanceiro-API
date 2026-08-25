@@ -23,7 +23,7 @@ export class HandleWebhookUseCase {
     private readonly syncInvestments: SyncInvestmentsUseCase,
   ) {}
 
-  async execute(itemId: string): Promise<void> {
+  async execute(itemId: string, event: string): Promise<void> {
     const connection = await this.prisma.connection.findUnique({
       where: { connectionId: itemId },
     });
@@ -42,7 +42,7 @@ export class HandleWebhookUseCase {
       data: { status: result.status },
     });
 
-    if (result.status === 'CONNECTED') {
+    if (result.status === 'CONNECTED' && event !== 'item/error') {
       const since = new Date(Date.now() - INITIAL_SYNC_DAYS * 24 * 60 * 60 * 1000);
       await this.syncAccounts.execute(connection.userId, itemId);
       await Promise.all([

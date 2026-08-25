@@ -3,8 +3,11 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import { HandleWebhookUseCase } from '../application/use-cases/handle-webhook.use-case';
 
 interface PluggyWebhookPayload {
-  event: string;   // 'item/created' | 'item/updated' | 'item/error'
+  event: string;
+  eventId: string;
   itemId: string;
+  clientUserId?: string;
+  triggeredBy: 'USER' | 'CLIENT' | 'SYNC' | 'INTERNAL';
 }
 
 // Excluído do Swagger — endpoint para uso interno da Pluggy, não do usuário final
@@ -18,9 +21,9 @@ export class OpenFinanceWebhookController {
   @Post('webhook')
   @HttpCode(200)
   async receive(@Body() payload: PluggyWebhookPayload) {
-    this.logger.log(`Webhook recebido: event=${payload.event} itemId=${payload.itemId}`);
+    this.logger.log(`Webhook recebido: event=${payload.event} itemId=${payload.itemId} eventId=${payload.eventId}`);
     // Processa em background para responder 200 imediatamente à Pluggy
-    this.handleWebhook.execute(payload.itemId).catch((err) =>
+    this.handleWebhook.execute(payload.itemId, payload.event).catch((err) =>
       this.logger.error(`Erro ao processar webhook: ${err.message}`),
     );
     return { received: true };

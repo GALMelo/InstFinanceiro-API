@@ -97,9 +97,9 @@ function toInvestmentType(pluggyType: string): InvestmentType {
 }
 
 function toConnectionStatus(pluggyStatus: string): ConnectionResult['status'] {
-  if (pluggyStatus === 'CONNECTED' || pluggyStatus === 'UPDATED') return 'CONNECTED';
-  if (pluggyStatus === 'FAILED')    return 'FAILED';
-  return 'PENDING';
+  if (pluggyStatus === 'UPDATED') return 'CONNECTED';
+  if (pluggyStatus === 'LOGIN_ERROR' || pluggyStatus === 'OUTDATED') return 'FAILED';
+  return 'PENDING'; // UPDATING, WAITING_USER_INPUT
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ export class PluggyAdapter implements OpenFinanceProvider {
       parameters: Record<string, string>;
     };
 
-    const body: Record<string, unknown> = { connectorId, parameters };
+    const body: Record<string, unknown> = { connectorId, parameters, clientUserId: userId };
     if (this.webhookBase) {
       body.webhookUrl = `${this.webhookBase}/connections/webhook`;
     }
@@ -224,8 +224,8 @@ export class PluggyAdapter implements OpenFinanceProvider {
       let nextCursor: string | undefined;
 
       do {
-        const params = new URLSearchParams({ accountId: account.id, dateFrom });
-        if (nextCursor) params.set('cursor', nextCursor);
+        const params = new URLSearchParams({ accountId: account.id, from: dateFrom });
+        if (nextCursor) params.set('after', nextCursor);
 
         const data = await this.get<PagedResponse<PluggyTransaction>>(
           `/v2/transactions?${params.toString()}`,
@@ -245,7 +245,12 @@ export class PluggyAdapter implements OpenFinanceProvider {
           );
         }
 
-        nextCursor = data.next;
+        if (data.next) {
+          const nextUrl = new URL(`https://api.pluggy.ai${data.next}`);
+          nextCursor = nextUrl.searchParams.get('after') ?? undefined;
+        } else {
+          nextCursor = undefined;
+        }
       } while (nextCursor);
     }
 
