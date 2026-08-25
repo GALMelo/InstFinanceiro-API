@@ -165,6 +165,8 @@ export class PluggyAdapter implements OpenFinanceProvider {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
+      const errorBody = await res.text().catch(() => '');
+      this.logger.error(`Pluggy POST ${path} falhou: HTTP ${res.status} — ${errorBody}`);
       throw new InternalServerErrorException(`Pluggy POST ${path} falhou: HTTP ${res.status}`);
     }
     return res.json() as Promise<T>;
@@ -224,7 +226,7 @@ export class PluggyAdapter implements OpenFinanceProvider {
       let nextCursor: string | undefined;
 
       do {
-        const params = new URLSearchParams({ accountId: account.id, from: dateFrom });
+        const params = new URLSearchParams({ accountId: account.id, dateFrom });
         if (nextCursor) params.set('after', nextCursor);
 
         const data = await this.get<PagedResponse<PluggyTransaction>>(
