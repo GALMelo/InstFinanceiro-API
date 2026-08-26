@@ -19,10 +19,11 @@ describe('SyncTransactionsUseCase', () => {
   });
 
   it('persiste todas as transações retornadas pelo provider e devolve a contagem', async () => {
-    const count = await useCase.execute('conn-1', new Date('2026-01-01'));
+    const result = await useCase.execute('conn-1', new Date('2026-01-01'));
 
+    expect(result.isOk()).toBe(true);
     // O mock retorna 3 transações fixas
-    expect(count).toBe(3);
+    if (result.isOk()) expect(result.value).toBe(3);
     expect(prisma.transaction.upsert).toHaveBeenCalledTimes(3);
   });
 
@@ -50,9 +51,10 @@ describe('SyncTransactionsUseCase', () => {
   it('retorna 0 e não chama upsert quando o provider não retorna transações', async () => {
     jest.spyOn(provider, 'fetchTransactions').mockResolvedValue([]);
 
-    const count = await useCase.execute('conn-vazia', new Date('2026-01-01'));
+    const result = await useCase.execute('conn-vazia', new Date('2026-01-01'));
 
-    expect(count).toBe(0);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toBe(0);
     expect(prisma.transaction.upsert).not.toHaveBeenCalled();
   });
 });

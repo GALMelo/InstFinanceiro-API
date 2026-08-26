@@ -15,10 +15,12 @@ export class StatementsController {
   @Get(':yearMonth')
   @ApiOperation({ summary: 'Extrato mensal', description: 'Retorna todas as transações do mês com totalIncome, totalExpense e balance.' })
   @ApiParam({ name: 'yearMonth', example: '2026-08', description: 'Mês no formato YYYY-MM' })
-  monthly(
+  async monthly(
     @CurrentUser() user: AuthenticatedUser,
     @Param('yearMonth', ParseMonthPipe) yearMonth: string,
   ) {
-    return this.getMonthlyStatement.execute(user.userId, yearMonth);
+    const result = await this.getMonthlyStatement.execute(user.userId, yearMonth);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 }

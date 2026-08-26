@@ -19,10 +19,13 @@ describe('GetExpensesGroupedUseCase', () => {
 
     const result = await useCase.execute('user-1', '2026-08');
 
-    expect(result).toEqual([
-      { category: 'ALIMENTACAO', total: '250.50', count: 3 },
-      { category: 'TRANSPORTE', total: '120.00', count: 2 },
-    ]);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toEqual([
+        { category: 'ALIMENTACAO', total: '250.50', count: 3 },
+        { category: 'TRANSPORTE', total: '120.00', count: 2 },
+      ]);
+    }
   });
 
   it('filtra apenas EXPENSE do userId e do intervalo correto', async () => {
@@ -52,7 +55,8 @@ describe('GetExpensesGroupedUseCase', () => {
 
     const result = await useCase.execute('user-1', '2026-08');
 
-    expect(result).toEqual([]);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toEqual([]);
   });
 
   it('usa "OUTROS" quando a categoria é null', async () => {
@@ -63,6 +67,10 @@ describe('GetExpensesGroupedUseCase', () => {
 
     const result = await useCase.execute('user-1', '2026-08');
 
-    expect(result[0].category).toBe('OUTROS');
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      const rows = result.value as Array<{ category: string }>;
+      expect(rows[0].category).toBe('OUTROS');
+    }
   });
 });

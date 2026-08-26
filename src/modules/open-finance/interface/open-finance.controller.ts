@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, Inject } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { AuthenticatedUser, CurrentUser } from '../../auth/current-user.decorator';
@@ -9,8 +9,8 @@ import { ListConnectionsUseCase } from '../application/use-cases/list-connection
 import { SyncAccountsUseCase } from '../application/use-cases/sync-accounts.use-case';
 import { SyncInvestmentsUseCase } from '../application/use-cases/sync-investments.use-case';
 import { SyncTransactionsUseCase } from '../application/use-cases/sync-transactions.use-case';
-import { Inject } from '@nestjs/common';
 import { OPEN_FINANCE_PROVIDER, OpenFinanceProvider } from '../domain/ports/open-finance-provider.port';
+import { DomainError, toUnexpected } from '../../../shared/errors/domain.errors';
 
 @ApiTags('Open Finance')
 @ApiBearerAuth()
@@ -35,16 +35,23 @@ export class OpenFinanceController {
     description: 'Busca as instituições financeiras suportadas pelo provider. Use o `id` retornado como `connectorId` em POST /connections.',
   })
   @ApiQuery({ name: 'search', required: false, description: 'Filtro por nome da instituição', example: 'Nubank' })
-  listConnectors(@Query('search') search?: string) {
-    return this.provider.listConnectors(search);
+  async listConnectors(@Query('search') search?: string) {
+    try {
+      return await this.provider.listConnectors(search);
+    } catch (e) {
+      if (e instanceof DomainError) throw e;
+      throw toUnexpected(e);
+    }
   }
 
   // ── Conexões ───────────────────────────────────────────────────────────────
 
   @Get('connections')
   @ApiOperation({ summary: 'Lista suas conexões bancárias' })
-  list(@CurrentUser() user: AuthenticatedUser) {
-    return this.listConnections.execute(user.userId);
+  async list(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.listConnections.execute(user.userId);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   @Post('connections')
@@ -69,8 +76,10 @@ Se o banco exigir MFA, o status retornado será \`PENDING\` — aguarde o webhoo
 
 As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
   })
-  connect(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConnectAccountDto) {
-    return this.connectAccount.execute(user.userId, dto.credentials);
+  async connect(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConnectAccountDto) {
+    const result = await this.connectAccount.execute(user.userId, dto.credentials);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   @Get('connections/:connectionId/status')
@@ -79,8 +88,10 @@ As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
     description: 'Consulta o provider em tempo real e atualiza o status no banco. Use para verificar se uma conexão PENDING já foi aprovada pelo banco.',
   })
   @ApiParam({ name: 'connectionId', description: 'ID da conexão retornado em POST /connections' })
-  status(@CurrentUser() user: AuthenticatedUser, @Param('connectionId') connectionId: string) {
-    return this.getConnectionStatus.execute(user.userId, connectionId);
+  async status(@CurrentUser() user: AuthenticatedUser, @Param('connectionId') connectionId: string) {
+    const result = await this.getConnectionStatus.execute(user.userId, connectionId);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   @Post('connections/:connectionId/sync')
@@ -97,17 +108,22 @@ As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
   ) {
     const sinceDate = since ? new Date(since) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    await this.syncAccounts.execute(user.userId, connectionId);
-    const [transactions, investments] = await Promise.all([
+    const accountsResult = await this.syncAccounts.execute(user.userId, connectionId);
+    if (accountsResult.isErr()) throw accountsResult.error;
+
+    const [txResult, invResult] = await Promise.all([
       this.syncTransactions.execute(connectionId, sinceDate),
       this.syncInvestments.execute(connectionId),
     ]);
 
+    if (txResult.isErr()) throw txResult.error;
+    if (invResult.isErr()) throw invResult.error;
+
     return {
       connectionId,
       syncedAt: new Date().toISOString(),
-      transactions,
-      investments,
+      transactions: txResult.value,
+      investments: invResult.value,
     };
   }
 }

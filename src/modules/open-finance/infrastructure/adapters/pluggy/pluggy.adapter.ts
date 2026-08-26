@@ -1,4 +1,5 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { BankProviderError } from '../../../../../shared/errors/domain.errors';
 import { ConfigService } from '@nestjs/config';
 import {
   ConnectionResult,
@@ -137,7 +138,7 @@ export class PluggyAdapter implements OpenFinanceProvider {
     });
 
     if (!res.ok) {
-      throw new InternalServerErrorException(`Pluggy auth falhou: HTTP ${res.status}`);
+      throw new BankProviderError(`Pluggy auth falhou: HTTP ${res.status}`);
     }
 
     const { apiKey } = await res.json() as { apiKey: string };
@@ -152,7 +153,7 @@ export class PluggyAdapter implements OpenFinanceProvider {
       headers: { 'X-API-KEY': key },
     });
     if (!res.ok) {
-      throw new InternalServerErrorException(`Pluggy GET ${path} falhou: HTTP ${res.status}`);
+      throw new BankProviderError(`Pluggy GET ${path} falhou: HTTP ${res.status}`);
     }
     return res.json() as Promise<T>;
   }
@@ -167,7 +168,7 @@ export class PluggyAdapter implements OpenFinanceProvider {
     if (!res.ok) {
       const errorBody = await res.text().catch(() => '');
       this.logger.error(`Pluggy POST ${path} falhou: HTTP ${res.status} — ${errorBody}`);
-      throw new InternalServerErrorException(`Pluggy POST ${path} falhou: HTTP ${res.status}`);
+      throw new BankProviderError(`Pluggy POST ${path} falhou: HTTP ${res.status}`);
     }
     return res.json() as Promise<T>;
   }

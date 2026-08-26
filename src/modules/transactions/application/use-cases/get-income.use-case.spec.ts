@@ -21,6 +21,7 @@ describe('GetIncomeUseCase', () => {
 
     const result = await useCase.execute('user-1', '2026-08');
 
+    expect(result.isOk()).toBe(true);
     expect(prisma.transaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -33,7 +34,7 @@ describe('GetIncomeUseCase', () => {
         }),
       }),
     );
-    expect(result).toEqual([INCOME_ROW]);
+    if (result.isOk()) expect(result.value).toEqual([INCOME_ROW]);
   });
 
   it('retorna lista vazia quando não há receitas no mês', async () => {
@@ -42,7 +43,8 @@ describe('GetIncomeUseCase', () => {
 
     const result = await useCase.execute('user-1', '2026-08');
 
-    expect(result).toEqual([]);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toEqual([]);
   });
 
   it('passa o intervalo correto para um mês de virada de ano', async () => {

@@ -18,13 +18,17 @@ export class TransactionsController {
 
   @Get('income')
   @ApiOperation({ summary: 'Lista receitas do mês', description: 'Retorna todas as transações de entrada (INCOME) do período informado.' })
-  income(@CurrentUser() user: AuthenticatedUser, @Query() { month }: MonthQueryDto) {
-    return this.getIncome.execute(user.userId, month);
+  async income(@CurrentUser() user: AuthenticatedUser, @Query() { month }: MonthQueryDto) {
+    const result = await this.getIncome.execute(user.userId, month);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   @Get('expenses/grouped')
   @ApiOperation({ summary: 'Gastos agrupados por categoria', description: 'Retorna o total gasto em cada categoria (ALIMENTACAO, TRANSPORTE, etc.) no mês.' })
-  expensesGrouped(@CurrentUser() user: AuthenticatedUser, @Query() { month }: MonthQueryDto) {
-    return this.getExpensesGrouped.execute(user.userId, month);
+  async expensesGrouped(@CurrentUser() user: AuthenticatedUser, @Query() { month }: MonthQueryDto) {
+    const result = await this.getExpensesGrouped.execute(user.userId, month);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 }

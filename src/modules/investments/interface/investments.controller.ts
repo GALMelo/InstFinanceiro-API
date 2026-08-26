@@ -13,7 +13,9 @@ export class InvestmentsController {
 
   @Get()
   @ApiOperation({ summary: 'Carteira de investimentos', description: 'Retorna os investimentos agrupados por tipo (CDB, ACOES, FII, etc.) com valor total.' })
-  list(@CurrentUser() user: AuthenticatedUser) {
-    return this.getInvestments.execute(user.userId);
+  async list(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.getInvestments.execute(user.userId);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 }

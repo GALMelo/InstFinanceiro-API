@@ -10,14 +10,18 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Cria uma conta e retorna o JWT' })
-  register(@Body() dto: AuthDto) {
-    return this.auth.register(dto);
+  async register(@Body() dto: AuthDto) {
+    const result = await this.auth.register(dto);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Autentica e retorna o JWT' })
-  login(@Body() dto: AuthDto) {
-    return this.auth.login(dto);
+  async login(@Body() dto: AuthDto) {
+    const result = await this.auth.login(dto);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 }
