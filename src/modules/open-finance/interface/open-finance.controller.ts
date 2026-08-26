@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards, Inject } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { AuthenticatedUser, CurrentUser } from '../../auth/current-user.decorator';
 import { ConnectAccountDto } from '../dto/connect-account.dto';
+import { ConnectorResponseDto } from '../dto/connector-response.dto';
+import { ConnectionListItemDto, ConnectionStatusDto, SyncResponseDto } from '../dto/connection-response.dto';
 import { ConnectAccountUseCase } from '../application/use-cases/connect-account.use-case';
 import { GetConnectionStatusUseCase } from '../application/use-cases/get-connection-status.use-case';
 import { ListConnectionsUseCase } from '../application/use-cases/list-connections.use-case';
@@ -11,6 +13,7 @@ import { SyncInvestmentsUseCase } from '../application/use-cases/sync-investment
 import { SyncTransactionsUseCase } from '../application/use-cases/sync-transactions.use-case';
 import { OPEN_FINANCE_PROVIDER, OpenFinanceProvider } from '../domain/ports/open-finance-provider.port';
 import { DomainError, toUnexpected } from '../../../shared/errors/domain.errors';
+import { ErrorResponseDto } from '../../../shared/dto/error-response.dto';
 
 @ApiTags('Open Finance')
 @ApiBearerAuth()
@@ -35,6 +38,9 @@ export class OpenFinanceController {
     description: 'Busca as instituições financeiras suportadas pelo provider. Use o `id` retornado como `connectorId` em POST /connections.',
   })
   @ApiQuery({ name: 'search', required: false, description: 'Filtro por nome da instituição', example: 'Nubank' })
+  @ApiResponse({ status: 200, type: [ConnectorResponseDto] })
+  @ApiResponse({ status: 401, type: ErrorResponseDto, description: 'Token ausente ou inválido' })
+  @ApiResponse({ status: 502, type: ErrorResponseDto, description: 'Falha ao comunicar com o provider bancário' })
   async listConnectors(@Query('search') search?: string) {
     try {
       return await this.provider.listConnectors(search);
@@ -48,6 +54,8 @@ export class OpenFinanceController {
 
   @Get('connections')
   @ApiOperation({ summary: 'Lista suas conexões bancárias' })
+  @ApiResponse({ status: 200, type: [ConnectionListItemDto] })
+  @ApiResponse({ status: 401, type: ErrorResponseDto, description: 'Token ausente ou inválido' })
   async list(@CurrentUser() user: AuthenticatedUser) {
     const result = await this.listConnections.execute(user.userId);
     if (result.isErr()) throw result.error;
@@ -76,6 +84,9 @@ Se o banco exigir MFA, o status retornado será \`PENDING\` — aguarde o webhoo
 
 As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
   })
+  @ApiResponse({ status: 201, type: ConnectionStatusDto })
+  @ApiResponse({ status: 401, type: ErrorResponseDto, description: 'Token ausente ou inválido' })
+  @ApiResponse({ status: 502, type: ErrorResponseDto, description: 'Falha ao comunicar com o provider bancário' })
   async connect(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConnectAccountDto) {
     const result = await this.connectAccount.execute(user.userId, dto.credentials);
     if (result.isErr()) throw result.error;
@@ -88,6 +99,10 @@ As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
     description: 'Consulta o provider em tempo real e atualiza o status no banco. Use para verificar se uma conexão PENDING já foi aprovada pelo banco.',
   })
   @ApiParam({ name: 'connectionId', description: 'ID da conexão retornado em POST /connections' })
+  @ApiResponse({ status: 200, type: ConnectionStatusDto })
+  @ApiResponse({ status: 401, type: ErrorResponseDto, description: 'Token ausente ou inválido' })
+  @ApiResponse({ status: 404, type: ErrorResponseDto, description: 'Conexão não encontrada' })
+  @ApiResponse({ status: 502, type: ErrorResponseDto, description: 'Falha ao comunicar com o provider bancário' })
   async status(@CurrentUser() user: AuthenticatedUser, @Param('connectionId') connectionId: string) {
     const result = await this.getConnectionStatus.execute(user.userId, connectionId);
     if (result.isErr()) throw result.error;
@@ -101,6 +116,10 @@ As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
   })
   @ApiParam({ name: 'connectionId', description: 'ID da conexão retornado em POST /connections' })
   @ApiQuery({ name: 'since', required: false, example: '2026-01-01', description: 'Data de corte para transações (ISO 8601). Padrão: 30 dias atrás.' })
+  @ApiResponse({ status: 201, type: SyncResponseDto })
+  @ApiResponse({ status: 401, type: ErrorResponseDto, description: 'Token ausente ou inválido' })
+  @ApiResponse({ status: 500, type: ErrorResponseDto, description: 'Falha ao sincronizar dados' })
+  @ApiResponse({ status: 502, type: ErrorResponseDto, description: 'Falha ao comunicar com o provider bancário' })
   async sync(
     @CurrentUser() user: AuthenticatedUser,
     @Param('connectionId') connectionId: string,
