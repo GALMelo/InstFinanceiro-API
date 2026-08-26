@@ -19,6 +19,15 @@ npx prisma migrate dev --name init    # aplica migrations (só na primeira vez)
 npm run start:dev                      # API em :3000, Swagger em :3000/docs
 ```
 
+### Parar o ambiente
+
+```bash
+# Ctrl+C no terminal da API (npm run start:dev)
+npm run db:down    # para o container do banco (dados preservados)
+```
+
+Para subir novamente: `npm run db:up && npm run start:dev`.
+
 ### Variáveis de ambiente (`.env`)
 
 | Variável | Padrão | Descrição |
