@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CryptoModule } from '../../shared/crypto/crypto.module';
+import { InvestmentsModule } from '../investments/investments.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 import { OPEN_FINANCE_PROVIDER } from './domain/ports/open-finance-provider.port';
 import { MockOpenFinanceAdapter } from './infrastructure/adapters/mock/mock-open-finance.adapter';
 import { PluggyAdapter } from './infrastructure/adapters/pluggy/pluggy.adapter';
@@ -15,7 +17,7 @@ import { OpenFinanceController } from './interface/open-finance.controller';
 import { OpenFinanceWebhookController } from './interface/open-finance-webhook.controller';
 
 @Module({
-  imports: [ConfigModule, CryptoModule],
+  imports: [ConfigModule, CryptoModule, InvestmentsModule, TransactionsModule],
   controllers: [OpenFinanceController, OpenFinanceWebhookController],
   providers: [
     ConnectAccountUseCase,

@@ -95,3 +95,23 @@ model Investment {
   @@index([accountId])
   @@index([type])
 }
+
+model InvestmentSnapshot {
+  id         String   @id @default(uuid())
+  userId     String
+  totalValue Decimal  @db.Decimal(14, 2)
+  capturedAt DateTime
+
+  @@unique([userId, capturedAt])
+  @@index([userId, capturedAt])
+}
+
+model ExpenseSnapshot {
+  id         String   @id @default(uuid())
+  userId     String
+  totalValue Decimal  @db.Decimal(14, 2)
+  month      DateTime // primeiro dia do mês UTC
+
+  @@unique([userId, month])
+  @@index([userId, month])
+}

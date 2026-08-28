@@ -11,6 +11,8 @@ import { ListConnectionsUseCase } from '../application/use-cases/list-connection
 import { SyncAccountsUseCase } from '../application/use-cases/sync-accounts.use-case';
 import { SyncInvestmentsUseCase } from '../application/use-cases/sync-investments.use-case';
 import { SyncTransactionsUseCase } from '../application/use-cases/sync-transactions.use-case';
+import { RecordInvestmentSnapshotUseCase } from '../../investments/application/use-cases/record-investment-snapshot.use-case';
+import { RecordExpenseSnapshotUseCase } from '../../transactions/application/use-cases/record-expense-snapshot.use-case';
 import { OPEN_FINANCE_PROVIDER, OpenFinanceProvider } from '../domain/ports/open-finance-provider.port';
 import { DomainError, toUnexpected } from '../../../shared/errors/domain.errors';
 import { ErrorResponseDto } from '../../../shared/dto/error-response.dto';
@@ -28,6 +30,8 @@ export class OpenFinanceController {
     private readonly syncAccounts: SyncAccountsUseCase,
     private readonly syncInvestments: SyncInvestmentsUseCase,
     private readonly syncTransactions: SyncTransactionsUseCase,
+    private readonly recordSnapshot: RecordInvestmentSnapshotUseCase,
+    private readonly recordExpenseSnapshot: RecordExpenseSnapshotUseCase,
   ) {}
 
   // ── Conectores ─────────────────────────────────────────────────────────────
@@ -137,6 +141,11 @@ As credenciais são criptografadas com AES-256-GCM antes de serem salvas.`,
 
     if (txResult.isErr()) throw txResult.error;
     if (invResult.isErr()) throw invResult.error;
+
+    await Promise.all([
+      this.recordSnapshot.execute(user.userId),
+      this.recordExpenseSnapshot.execute(user.userId),
+    ]);
 
     return {
       connectionId,

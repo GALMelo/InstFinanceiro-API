@@ -1,4 +1,28 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt, Max, Min } from 'class-validator';
+
+export class ExpenseHistoryQueryDto {
+  @ApiProperty({ example: 6, description: 'Quantidade de meses a retornar (1–24)', default: 6, required: false })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  months: number = 6;
+}
+
+export class MonthlyExpenseDto {
+  @ApiProperty({ example: '2026-02', description: 'Mês no formato YYYY-MM' })
+  month: string;
+
+  @ApiProperty({ example: 3240.75, description: 'Total de despesas no mês' })
+  total: number;
+}
+
+export class ExpenseHistoryDto {
+  @ApiProperty({ type: [MonthlyExpenseDto] })
+  history: MonthlyExpenseDto[];
+}
 
 export class IncomeItemDto {
   @ApiProperty({ example: 'tx-uuid-...' })
