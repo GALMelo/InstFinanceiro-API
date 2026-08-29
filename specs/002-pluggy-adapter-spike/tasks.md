@@ -78,9 +78,9 @@ como `[a preencher após execução]` aguardando observações reais.
 
 **Purpose**: Executar o script contra dados reais e validar os artefatos produzidos.
 
-- [ ] T008 Seguir `quickstart.md` para executar `scripts/pluggy-explore.ts` contra um `itemId` real; confirmar que todos os itens do checklist de validação do quickstart passam; anotar a versão do `pluggy-sdk` instalada para incluir no findings.md
+- [x] T008 Seguir `quickstart.md` para executar `scripts/pluggy-explore.ts` contra um `itemId` real; confirmar que todos os itens do checklist de validação do quickstart passam; anotar a versão do `pluggy-sdk` instalada para incluir no findings.md
 
-- [ ] T009 Preencher `specs/002-pluggy-adapter-spike/findings.md` com os dados reais observados na execução de T008; atribuir status CONFIRMADA / INCORRETA / INDEFINIDA a cada suposição do `PluggyAdapter`; listar na seção 5 qualquer divergência que requeira correção futura
+- [x] T009 Preencher `specs/002-pluggy-adapter-spike/findings.md` com os dados reais observados na execução de T008; atribuir status CONFIRMADA / INCORRETA / INDEFINIDA a cada suposição do `PluggyAdapter`; listar na seção 5 qualquer divergência que requeira correção futura
 
 ---
 
